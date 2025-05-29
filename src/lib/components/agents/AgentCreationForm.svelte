@@ -14,14 +14,25 @@
 
   onMount(async () => {
     try {
-      const response = await getModels($user.token); // Use getModels
-      availableModels = response.data.map(model => ({ id: model.id, name: model.name })); // Access response.data
-      if (availableModels.length > 0) {
-        selectedModel = availableModels[0].id; // Default to the first model
+      const response = await getModels($user.token);
+
+      if (response && response.data && Array.isArray(response.data)) {
+        availableModels = response.data.map((model) => ({
+          id: model.id,
+          name: model.name,
+        }));
+        if (availableModels.length > 0) {
+          selectedModel = availableModels[0].id;
+        }
+      } else {
+        console.error("Invalid response structure from /api/models:", response);
+        toast.error("Error: Could not parse model list from server.");
+        availableModels = []; // Ensure it's an empty array
       }
     } catch (error) {
       toast.error(`Error fetching available models: ${error.message}`);
       console.error('Error fetching available models:', error);
+      availableModels = []; // Ensure it's an empty array on error too
     }
   });
 
@@ -30,7 +41,7 @@
       name: agentName,
       role: agentRole,
       system_message: systemMessage || null,
-      llm_model: selectedModel,
+      model_id: selectedModel, // Changed from llm_model to model_id
       skills: skills || null, // Send skills as a string
     };
 
