@@ -12,11 +12,18 @@ export const getModels = async (token: string = '') => {
 		}
 	})
 		.then(async (res) => {
-			if (!res.ok) throw await res.json();
-			return res.json();
-		})
-		.then((json) => {
-			return json;
+			if (!res.ok) {
+				const errorBody = await res.json().catch(() => ({ detail: res.statusText })); // Try to parse error, fallback to statusText
+				throw errorBody;
+			}
+			const body = await res.json();
+			if (Array.isArray(body)) {
+				// API returned a direct array, wrap it
+				return { data: body };
+			} else {
+				// API returned an object, assume it's the expected structure or let downstream handle it
+				return body;
+			}
 		})
 		.catch((err) => {
 			error = err;
