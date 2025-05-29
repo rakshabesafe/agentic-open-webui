@@ -9,30 +9,41 @@
   let agentRole = '';
   let systemMessage = '';
   let skills = '';
-  let availableModels = []; // Renamed from ollamaModels
+  let availableModels = [];
   let selectedModel = '';
+  let loadingModels = true; // Added loadingModels state
 
   onMount(async () => {
     try {
       const response = await getModels($user.token);
 
       if (response && response.data && Array.isArray(response.data)) {
-        availableModels = response.data.map((model) => ({
-          id: model.id,
-          name: model.name,
-        }));
-        if (availableModels.length > 0) {
-          selectedModel = availableModels[0].id;
+        if (response.data.length === 0) {
+          console.log("No models available from /api/models. The list is empty.");
+          toast.info("No models available to select."); // Informative toast
+          availableModels = [];
+          selectedModel = ''; // Clear selected model
+        } else {
+          availableModels = response.data.map((model) => ({
+            id: model.id,
+            name: model.name,
+          }));
+          selectedModel = availableModels[0].id; // Pre-select first model
         }
       } else {
+        // This case is for when response.data is NOT a valid array or response is malformed
         console.error("Invalid response structure from /api/models:", response);
-        toast.error("Error: Could not parse model list from server.");
-        availableModels = []; // Ensure it's an empty array
+        toast.error("Error: Could not parse model list from the server.");
+        availableModels = [];
+        selectedModel = '';
       }
     } catch (error) {
       toast.error(`Error fetching available models: ${error.message}`);
       console.error('Error fetching available models:', error);
-      availableModels = []; // Ensure it's an empty array on error too
+      availableModels = [];
+      selectedModel = '';
+    } finally {
+      loadingModels = false; // Set loadingModels to false in finally block
     }
   });
 
@@ -69,11 +80,13 @@
 
   <div>
     <label for="llmModel" class="block text-sm font-medium text-gray-700">LLM Model</label>
-    <select id="llmModel" bind:value={selectedModel} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-      {#if availableModels.length === 0}
+    <select id="llmModel" bind:value={selectedModel} class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" disabled={loadingModels || availableModels.length === 0}>
+      {#if loadingModels}
         <option value="" disabled>Loading models...</option>
+      {:else if availableModels.length === 0}
+        <option value="" disabled>No models available</option>
       {:else}
-        {#each availableModels as model} // Iterate over availableModels
+        {#each availableModels as model}
           <option value={model.id}>{model.name}</option>
         {/each}
       {/if}
