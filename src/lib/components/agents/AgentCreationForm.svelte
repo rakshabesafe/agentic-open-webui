@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { toast } from 'svelte-sonner';
-  import { getModels } from '$lib/apis/models'; // Changed from getOllamaModels to getModels
+  import { getModels } from '$lib/apis'; // Import from $lib/apis
   import { createAgent } from '$lib/apis/agents';
   import { user } from '$lib/stores';
 
@@ -14,25 +14,26 @@
   let loadingModels = true; // Added loadingModels state
 
   onMount(async () => {
+    loadingModels = true; 
     try {
-      const response = await getModels($user.token);
+      const modelsArray = await getModels($user.token); // Call getModels from $lib/apis
 
-      if (response && response.data && Array.isArray(response.data)) {
-        if (response.data.length === 0) {
-          console.log("No models available from /api/models. The list is empty.");
-          toast.info("No models available to select."); // Informative toast
+      if (modelsArray && Array.isArray(modelsArray)) {
+        if (modelsArray.length === 0) {
+          console.log("No models available. The list from API is empty.");
+          toast.info("No models available to select.");
           availableModels = [];
-          selectedModel = ''; // Clear selected model
+          selectedModel = '';
         } else {
-          availableModels = response.data.map((model) => ({
-            id: model.id,
+          availableModels = modelsArray.map((model) => ({
+            id: model.id, 
             name: model.name,
           }));
-          selectedModel = availableModels[0].id; // Pre-select first model
+          selectedModel = availableModels[0].id;
         }
       } else {
-        // This case is for when response.data is NOT a valid array or response is malformed
-        console.error("Invalid response structure from /api/models:", response);
+        // This case means modelsArray is null (due to an error in getModels) or not an array
+        console.error("Invalid model data received or error in getModels:", modelsArray);
         toast.error("Error: Could not parse model list from the server.");
         availableModels = [];
         selectedModel = '';
@@ -43,7 +44,7 @@
       availableModels = [];
       selectedModel = '';
     } finally {
-      loadingModels = false; // Set loadingModels to false in finally block
+      loadingModels = false;
     }
   });
 
