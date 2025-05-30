@@ -49,12 +49,20 @@
   });
 
   async function handleSubmit() {
+    let processedSkills = [];
+    if (skills && skills.trim() !== '') {
+      processedSkills = skills
+        .split(',')
+        .map((skill) => skill.trim())
+        .filter((skill) => skill !== '');
+    }
+
     const agentData = {
       name: agentName,
       role: agentRole,
       system_message: systemMessage || null,
-      model_id: selectedModel, // Changed from llm_model to model_id
-      skills: skills || null, // Send skills as a string
+      model_id: selectedModel,
+      skills: processedSkills, // Use the processed array here
     };
 
     try {
